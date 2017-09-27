@@ -93,6 +93,8 @@ function createPanZoom(domElement, options) {
 
   var isDisabled = false;
 
+  var setDblClickEvent = typeof options.setDblClickEvent === 'boolean' ? options.setDblClickEvent : true
+
   listenForEvents()
 
   return {
@@ -351,10 +353,12 @@ function createPanZoom(domElement, options) {
   }
 
   function dispose() {
+    if (setDblClickEvent) {
+      owner.removeEventListener('dblclick', onDoubleClick)
+    }
     wheel.removeWheelListener(domElement, onMouseWheel)
     owner.removeEventListener('mousedown', onMouseDown)
     owner.removeEventListener('keydown', onKeyDown)
-    owner.removeEventListener('dblclick', onDoubleClick)
     if (frameAnimation) {
       window.cancelAnimationFrame(frameAnimation)
       frameAnimation = 0;
@@ -369,8 +373,10 @@ function createPanZoom(domElement, options) {
   }
 
   function listenForEvents() {
+    if (setDblClickEvent) {
+      owner.addEventListener('dblclick', onDoubleClick)
+    }
     owner.addEventListener('mousedown', onMouseDown)
-    owner.addEventListener('dblclick', onDoubleClick)
     owner.addEventListener('touchstart', onTouch)
     owner.addEventListener('keydown', onKeyDown)
     wheel.addWheelListener(owner, onMouseWheel)
