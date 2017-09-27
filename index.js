@@ -19,7 +19,7 @@ module.exports = createPanZoom;
 
 /**
  * Creates a new instance of panzoom, so that an object can be panned and zoomed
- * 
+ *
  * @param {DOMElement} domElement where panzoom should be attached.
  * @param {Object} options that configure behavior.
  */
@@ -79,7 +79,7 @@ function createPanZoom(domElement, options) {
   var smoothScroll
   if ('smoothScroll' in options && !options.smoothScroll) {
     // If user explicitly asked us not to use smooth scrolling, we obey
-    smoothScroll = rigidScroll() 
+    smoothScroll = rigidScroll()
   } else {
     // otherwise we use forward smoothScroll settings to kinetic API
     // which makes scroll smoothing.
@@ -91,6 +91,8 @@ function createPanZoom(domElement, options) {
 
   var multitouch
 
+  var isDisabled = false;
+
   listenForEvents()
 
   return {
@@ -101,7 +103,17 @@ function createPanZoom(domElement, options) {
     zoomTo: publicZoomTo,
     zoomAbs: zoomAbs,
     getTransform: getTransformModel,
-    showRectangle: showRectangle
+    showRectangle: showRectangle,
+    disableEvents: disableEvents,
+    enableEvents: enableEvents
+  }
+
+  function disableEvents() {
+    isDisabled = true;
+  }
+
+  function enableEvents() {
+    isDisabled = false;
   }
 
   function showRectangle(rect) {
@@ -525,6 +537,10 @@ function createPanZoom(domElement, options) {
   }
 
   function onMouseDown(e) {
+    if (isDisabled) {
+      return false;
+    }
+
     if (touchInProgress) {
       // modern browsers will fire mousedown for touch events too
       // we do not want this: touch is handled separately.
@@ -550,6 +566,10 @@ function createPanZoom(domElement, options) {
   }
 
   function onMouseMove(e) {
+    if (isDisabled) {
+      return false;
+    }
+
     // no need to worry about mouse events when touch is happening
     if (touchInProgress) return
 
@@ -565,6 +585,10 @@ function createPanZoom(domElement, options) {
   }
 
   function onMouseUp() {
+    if (isDisabled) {
+      return false;
+    }
+
     preventTextSelection.release()
     triggerPanEnd()
     releaseDocumentMouse()

@@ -61,6 +61,70 @@ var scene = document.getElementById('scene')
 panzoom(scene)
 ```
 
+## Configurable options
+
+
+```js
+{
+  /**
+   * @property {Function} controller
+   */
+  controller: () => ({/* api */}),
+
+  /**
+   * @property {Object|Boolean} bounds
+   * Allowed structure:
+   * {
+   *   top: Number,
+   *   bottom: Number,
+   *   left: Number,
+   *   right: Number
+   * }
+   */
+  bounds: undefined,
+
+  /**
+   * @property {Number} maxZoom
+   */
+  maxZoom: Number.POSITIVE_INFINITY,
+
+  /**
+   * @property {Number} minZoom
+   */
+  minZoom: 0,
+
+  /**
+   * @property {Number} boundsPaddding
+   */
+  boundsPaddding: 0.05,
+
+  /**
+   * @property {Number} zoomDoubleClickSpeed
+   */
+  zoomDoubleClickSpeed: 1.75,
+
+  /**
+   * @property {Function} beforeWheel
+   */
+  beforeWheel: function() {},
+
+  /**
+   * @property {Number} zoomSpeed
+   */
+  zoomSpeed: 0.065,
+
+  /**
+   * @property {Boolean} smoothScroll
+   */
+  smoothScroll: true,
+
+  /**
+   * @property {Boolean} autocenter
+   */
+  autocenter: false
+}
+```
+
 If your use case requires dynamic behavior (i.e. you want to make a scene not 
 draggable anymore, or even completely delete an SVG element) make sure to call
 `dispose()` method:
