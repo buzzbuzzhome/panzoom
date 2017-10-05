@@ -20,7 +20,7 @@ module.exports = createPanZoom;
 
 /**
  * Creates a new instance of panzoom, so that an object can be panned and zoomed
- * 
+ *
  * @param {DOMElement} domElement where panzoom should be attached.
  * @param {Object} options that configure behavior.
  */
@@ -80,7 +80,7 @@ function createPanZoom(domElement, options) {
   var smoothScroll
   if ('smoothScroll' in options && !options.smoothScroll) {
     // If user explicitly asked us not to use smooth scrolling, we obey
-    smoothScroll = rigidScroll() 
+    smoothScroll = rigidScroll()
   } else {
     // otherwise we use forward smoothScroll settings to kinetic API
     // which makes scroll smoothing.
@@ -92,6 +92,10 @@ function createPanZoom(domElement, options) {
 
   var multitouch
 
+  var isDisabled = false;
+
+  var setDblClickEvent = typeof options.setDblClickEvent === 'boolean' ? options.setDblClickEvent : true
+
   listenForEvents()
 
   return {
@@ -102,7 +106,17 @@ function createPanZoom(domElement, options) {
     zoomTo: publicZoomTo,
     zoomAbs: zoomAbs,
     getTransform: getTransformModel,
-    showRectangle: showRectangle
+    showRectangle: showRectangle,
+    disableEvents: disableEvents,
+    enableEvents: enableEvents
+  }
+
+  function disableEvents() {
+    isDisabled = true;
+  }
+
+  function enableEvents() {
+    isDisabled = false;
   }
 
   function showRectangle(rect) {
@@ -340,10 +354,12 @@ function createPanZoom(domElement, options) {
   }
 
   function dispose() {
+    if (setDblClickEvent) {
+      owner.removeEventListener('dblclick', onDoubleClick)
+    }
     wheel.removeWheelListener(domElement, onMouseWheel)
     owner.removeEventListener('mousedown', onMouseDown)
     owner.removeEventListener('keydown', onKeyDown)
-    owner.removeEventListener('dblclick', onDoubleClick)
     if (frameAnimation) {
       window.cancelAnimationFrame(frameAnimation)
       frameAnimation = 0;
@@ -358,8 +374,10 @@ function createPanZoom(domElement, options) {
   }
 
   function listenForEvents() {
+    if (setDblClickEvent) {
+      owner.addEventListener('dblclick', onDoubleClick)
+    }
     owner.addEventListener('mousedown', onMouseDown)
-    owner.addEventListener('dblclick', onDoubleClick)
     owner.addEventListener('touchstart', onTouch)
     owner.addEventListener('keydown', onKeyDown)
     wheel.addWheelListener(owner, onMouseWheel)
@@ -526,6 +544,10 @@ function createPanZoom(domElement, options) {
   }
 
   function onMouseDown(e) {
+    if (isDisabled) {
+      return false;
+    }
+
     if (touchInProgress) {
       // modern browsers will fire mousedown for touch events too
       // we do not want this: touch is handled separately.
@@ -551,6 +573,10 @@ function createPanZoom(domElement, options) {
   }
 
   function onMouseMove(e) {
+    if (isDisabled) {
+      return false;
+    }
+
     // no need to worry about mouse events when touch is happening
     if (touchInProgress) return
 
@@ -566,6 +592,10 @@ function createPanZoom(domElement, options) {
   }
 
   function onMouseUp() {
+    if (isDisabled) {
+      return false;
+    }
+
     preventTextSelection.release()
     triggerPanEnd()
     releaseDocumentMouse()
@@ -1003,9 +1033,12 @@ var animations = {
 
 
 module.exports = animate;
+module.exports.makeAggregateRaf = makeAggregateRaf;
+module.exports.sharedScheduler = makeAggregateRaf();
+
 
 function animate(source, target, options) {
-  var start= Object.create(null)
+  var start = Object.create(null)
   var diff = Object.create(null)
   options = options || {}
   // We let clients specify their own easing function
@@ -1030,7 +1063,7 @@ function animate(source, target, options) {
     diff[key] = target[key] - source[key]
   })
 
-  var durationInMs = options.duration || 400
+  var durationInMs = typeof options.duration === 'number' ? options.duration : 400
   var durationInFrames = Math.max(1, durationInMs * 0.06) // 0.06 because 60 frames pers 1,000 ms
   var previousAnimationId
   var frame = 0
@@ -1094,6 +1127,51 @@ function timeoutScheduler() {
     cancel: function (id) {
       return clearTimeout(id)
     }
+  }
+}
+
+function makeAggregateRaf() {
+  var frontBuffer = new Set();
+  var backBuffer = new Set();
+  var frameToken = 0;
+
+  return {
+    next: next,
+    cancel: next,
+    clearAll: clearAll
+  }
+
+  function clearAll() {
+    frontBuffer.clear();
+    backBuffer.clear();
+    cancelAnimationFrame(frameToken);
+    frameToken = 0;
+  }
+
+  function next(callback) {
+    backBuffer.add(callback);
+    renderNextFrame();
+  }
+
+  function renderNextFrame() {
+    if (!frameToken) frameToken = requestAnimationFrame(renderFrame);
+  }
+
+  function renderFrame() {
+    frameToken = 0;
+
+    var t = backBuffer;
+    backBuffer = frontBuffer;
+    frontBuffer = t;
+
+    frontBuffer.forEach(function(callback) {
+      callback();
+    });
+    frontBuffer.clear();
+  }
+
+  function cancel(callback) {
+    backBuffer.delete(callback);
   }
 }
 
