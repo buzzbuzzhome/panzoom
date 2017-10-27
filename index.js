@@ -452,7 +452,7 @@ function createPanZoom(domElement, options) {
 
   function handleSignleFingerTouch(e) {
     e.stopPropagation()
-    e.preventDefault()
+    // e.preventDefault()
 
     var touch = e.touches[0]
     mouseX = touch.clientX
