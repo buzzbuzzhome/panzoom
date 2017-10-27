@@ -108,7 +108,7 @@ function createPanZoom(domElement, options) {
     showRectangle: showRectangle,
     disableEvents: disableEvents,
     enableEvents: enableEvents,
-    setMinZoom
+    setMinZoom: setMinZoom
   }
 
   function disableEvents() {
